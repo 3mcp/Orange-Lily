@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-cjs/
+release/
+*.log
+.env
+relatorio-*.txt
+programas-instalados-*.txt

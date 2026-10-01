@@ -1,0 +1,34 @@
+{
+  "name": "orange-lily",
+  "version": "1.0.0",
+  "description": "Orange Lily — toolkit de suporte técnico em terminal",
+  "type": "module",
+  "bin": {
+    "orangelily": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "build:cjs": "tsc -p tsconfig.pkg.json && node scripts/prep-cjs.cjs",
+    "build:exe": "npm run build:cjs && pkg dist-cjs/index.js --targets node18-win-x64 --output release/orange-lily.exe"
+  },
+  "pkg": {
+    "assets": [
+      "node_modules/figlet/fonts/**/*"
+    ]
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "figlet": "^1.12.0",
+    "inquirer": "^9.2.15"
+  },
+  "devDependencies": {
+    "@types/figlet": "^1.7.0",
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^20.11.0",
+    "pkg": "^5.8.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}
