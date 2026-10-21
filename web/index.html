@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Orange Lily — toolkit de suporte técnico para terminal, com instalação em um comando.">
+<title>Orange Lily</title>
+<style>
+  /* Layout concept: a tall botanical hero (petal-gradient glow + single stylized petal mark)
+     giving way to a dark "terminal card" that mirrors the real CLI dashboard, then a
+     category grid echoing the tool's own menu structure, closed by an install strip. */
+  :root{
+    --bg:#FBF4EC;
+    --surface:#FFFFFF;
+    --surface-2:#F3E7D8;
+    --fg:#2B1A10;
+    --fg-muted:#7A6150;
+    --accent:#E85D04;
+    --accent-2:#FF8C42;
+    --accent-soft:#FDE3CC;
+    --border:#E8D5BE;
+    --mono-bg:#1A1210;
+    --mono-fg:#F3E7D8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#17100D;
+      --surface:#1F1612;
+      --surface-2:#271B15;
+      --fg:#F4E9DC;
+      --fg-muted:#B99E88;
+      --accent:#FF8C42;
+      --accent-2:#FFB172;
+      --accent-soft:#3A2518;
+      --border:#3A2A20;
+      --mono-bg:#0F0A08;
+      --mono-fg:#F4E9DC;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#17100D;
+    --surface:#1F1612;
+    --surface-2:#271B15;
+    --fg:#F4E9DC;
+    --fg-muted:#B99E88;
+    --accent:#FF8C42;
+    --accent-2:#FFB172;
+    --accent-soft:#3A2518;
+    --border:#3A2A20;
+    --mono-bg:#0F0A08;
+    --mono-fg:#F4E9DC;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:var(--bg);
+    color:var(--fg);
+    font-family:"Inter",system-ui,-apple-system,sans-serif;
+    padding-left:max(16px, env(safe-area-inset-left,0px));
+    padding-right:max(16px, env(safe-area-inset-right,0px));
+  }
+  h1,h2,h3{
+    font-family:"Fraunces",Georgia,serif;
+    font-weight:600;
+    text-wrap:balance;
+    margin:0;
+  }
+  .wrap{max-width:1040px;margin:0 auto;}
+  .eyebrow{
+    font-family:"Inter",sans-serif;
+    font-size:.72rem;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    font-weight:600;
+  }
+  a{color:var(--accent);}
+  code, .mono{font-family:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;}
+
+  /* ---------- theme toggle ---------- */
+  .toggle-row{
+    display:flex;justify-content:flex-end;
+    padding-block:20px 0;
+  }
+  #theme-toggle{
+    display:flex;align-items:center;gap:8px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:6px 14px 6px 10px;
+    font-size:.78rem;
+    color:var(--fg-muted);
+    cursor:pointer;
+    font-family:inherit;
+  }
+  #theme-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  #theme-toggle .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft);
+  }
+
+  /* ---------- hero ---------- */
+  .hero{
+    padding-block:28px 56px;
+    display:grid;
+    grid-template-columns:1.1fr .9fr;
+    gap:40px;
+    align-items:center;
+  }
+  @media (max-width:760px){ .hero{grid-template-columns:1fr;} }
+
+  .hero h1{font-size:clamp(2.4rem,5vw,3.6rem);line-height:1.04;margin-top:10px;}
+  .hero h1 em{
+    font-style:normal;
+    color:var(--accent);
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero p{
+    font-size:1.05rem;color:var(--fg-muted);
+    max-width:46ch;margin-top:16px;line-height:1.6;
+  }
+  .hero-note{
+    font-size:.8rem;color:var(--fg-muted);margin-top:14px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .hero-actions{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap;}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:12px 20px;border-radius:10px;
+    font-size:.92rem;font-weight:600;
+    text-decoration:none;cursor:pointer;border:1px solid transparent;
+    font-family:inherit;
+  }
+  .btn-primary{background:var(--accent);color:#1A0F08;}
+  .btn-primary:hover{background:var(--accent-2);}
+  .btn-ghost{background:transparent;color:var(--fg);border-color:var(--border);}
+  .btn-ghost:hover{border-color:var(--accent);}
+
+  /* petal mark — single stylized petal, not a literal flower illustration */
+  .petal-stage{
+    position:relative;
+    display:flex;align-items:center;justify-content:center;
+    min-height:280px;
+  }
+  .petal-glow{
+    position:absolute;width:320px;height:320px;
+    background:radial-gradient(circle,var(--accent-soft) 0%,transparent 70%);
+    filter:blur(2px);
+  }
+  svg.petal{width:200px;height:260px;position:relative;z-index:1;}
+  .petal-ring{
+    position:absolute;width:260px;height:260px;border-radius:50%;
+    border:1px dashed var(--border);
+    animation:spin 50s linear infinite;
+  }
+  @media (prefers-reduced-motion:reduce){ .petal-ring{animation:none;} }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---------- terminal mock ---------- */
+  section.showcase{padding-block:40px;}
+  .term-card{
+    background:var(--mono-bg);
+    border-radius:16px;
+    padding:0;
+    overflow:hidden;
+    border:1px solid var(--border);
+    box-shadow:0 20px 50px -20px rgba(0,0,0,.35);
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:8px;
+    padding:12px 16px;
+    background:rgba(255,255,255,.03);
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .term-bar .dot{width:10px;height:10px;border-radius:50%;}
+  .term-bar .dot:nth-child(1){background:#E8604C;}
+  .term-bar .dot:nth-child(2){background:#E8B33D;}
+  .term-bar .dot:nth-child(3){background:#6FBF73;}
+  .term-title{margin-left:8px;color:#8d7a6c;font-size:.78rem;font-family:"IBM Plex Mono",monospace;}
+  .term-body{
+    padding:24px;
+    display:grid;grid-template-columns:auto 1fr;gap:28px;
+    color:var(--mono-fg);
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.82rem;
+    line-height:1.55;
+  }
+  @media (max-width:640px){ .term-body{grid-template-columns:1fr;} }
+  .term-art{color:var(--accent);white-space:pre;font-size:.62rem;line-height:1.1;opacity:.9;}
+  .term-info .row{display:flex;gap:10px;margin-bottom:4px;}
+  .term-info .label{color:#8d7a6c;min-width:88px;}
+  .term-info .bar{color:var(--accent-2);}
+  .term-info h4{
+    font-family:"IBM Plex Mono",monospace;color:var(--accent);
+    font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;
+    margin:18px 0 8px;
+  }
+
+  /* ---------- features ---------- */
+  section.features{padding-block:48px;}
+  .section-head{max-width:60ch;margin-bottom:32px;}
+  .section-head h2{font-size:clamp(1.6rem,3vw,2.1rem);}
+  .section-head p{color:var(--fg-muted);margin-top:10px;line-height:1.6;}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+  }
+  @media (max-width:760px){ .grid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:480px){ .grid{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px;
+    min-width:0;
+  }
+  .card .num{
+    font-family:"IBM Plex Mono",monospace;
+    color:var(--accent);font-size:.76rem;
+  }
+  .card h3{font-family:"Inter",sans-serif;font-size:1rem;font-weight:600;margin-top:10px;}
+  .card p{color:var(--fg-muted);font-size:.88rem;margin-top:6px;line-height:1.5;}
+
+  /* ---------- install strip ---------- */
+  section.install{padding-block:48px 64px;}
+  .install-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  }
+  @media (max-width:700px){ .install-grid{grid-template-columns:1fr;} }
+  .install-card{
+    background:linear-gradient(135deg,var(--surface-2),var(--surface));
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:28px;
+    min-width:0;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .install-card .step-tag{
+    font-family:"IBM Plex Mono",monospace;font-size:.72rem;
+    color:var(--accent);letter-spacing:.06em;text-transform:uppercase;
+  }
+  .install-card h3{font-size:1.2rem;}
+  .install-card p{color:var(--fg-muted);font-size:.92rem;line-height:1.55;}
+  .copy-box{
+    display:flex;align-items:center;gap:10px;
+    background:var(--mono-bg);
+    color:var(--mono-fg);
+    border-radius:10px;
+    padding:12px 14px;
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.8rem;
+    max-width:100%;
+    overflow-x:auto;
+    white-space:nowrap;
+  }
+  .copy-box button{
+    background:var(--accent);color:#1A0F08;border:none;border-radius:6px;
+    padding:6px 10px;font-size:.72rem;font-weight:600;cursor:pointer;flex:none;
+    font-family:"Inter",sans-serif;
+  }
+  .install-card .btn{align-self:flex-start;}
+
+  footer{
+    padding-block:24px 40px;
+    color:var(--fg-muted);font-size:.82rem;
+    display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    border-top:1px solid var(--border);
+  }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+</head>
+<body>
+
+<div class="wrap">
+  <div class="toggle-row">
+    <button id="theme-toggle" type="button" aria-label="Alternar modo claro/escuro">
+      <span class="dot"></span>
+      <span id="theme-label">Automático</span>
+    </button>
+  </div>
+
+  <header class="hero">
+    <div>
+      <div class="eyebrow">Toolkit de suporte técnico · terminal</div>
+      <h1>Diagnóstico e manutenção,<br><em>um lírio</em> por vez.</h1>
+      <p>Orange Lily é um painel de comando para técnicos de TI no Windows — hardware, rede, segurança e inventário, tudo em um menu que abre em segundos, sem instalar nada.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#instalar">Instalar agora</a>
+        <a class="btn btn-ghost" href="#demonstracao">Ver o painel</a>
+      </div>
+      <p class="hero-note">Windows · gratuito · sem precisar instalar Node</p>
+    </div>
+    <div class="petal-stage" aria-hidden="true">
+      <div class="petal-glow"></div>
+      <div class="petal-ring"></div>
+      <svg class="petal" viewBox="0 0 120 160" fill="none">
+        <path d="M60 4
+                 C92 24, 112 64, 100 108
+                 C92 138, 72 156, 60 156
+                 C48 156, 28 138, 20 108
+                 C8 64, 28 24, 60 4 Z"
+              fill="url(#petalFill)" stroke="var(--accent)" stroke-width="1.2"/>
+        <path d="M60 10 C60 50, 60 110, 60 150" stroke="var(--accent-2)" stroke-width="1" opacity=".6"/>
+        <path d="M60 36 C48 56, 42 78, 44 100" stroke="var(--accent-2)" stroke-width=".7" opacity=".4"/>
+        <path d="M60 36 C72 56, 78 78, 76 100" stroke="var(--accent-2)" stroke-width=".7" opacity=".4"/>
+        <defs>
+          <linearGradient id="petalFill" x1="60" y1="4" x2="60" y2="156" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="var(--accent-2)"/>
+            <stop offset="1" stop-color="var(--accent)"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  </header>
+
+  <section class="showcase" id="demonstracao">
+    <div class="term-card">
+      <div class="term-bar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="term-title">orange-lily.exe</span>
+      </div>
+      <div class="term-body">
+        <div class="term-art">⠀⣠⣤⣄⠀
+⢾⣷⠛⠂⠀
+⠈⢿⣿⣦⡙
+⠀⠉⢿⣿⣦
+⠀⠀⠹⣿⣿
+⠀⠀⢠⣿⣿
+⠀⣠⣿⡟⠁
+⠰⠿⠋⠀⠀</div>
+        <div class="term-info">
+          <h4>Hardware</h4>
+          <div class="row"><span class="label">CPU</span><span>Ryzen 5 5600 · 32%</span></div>
+          <div class="row"><span class="label">GPU</span><span>RTX 3060 · 41°C</span></div>
+          <div class="row"><span class="label">RAM</span><span class="bar">█████████░░░░░</span> 62%</div>
+          <div class="row"><span class="label">DISCO</span><span class="bar">██████░░░░░░░░</span> 44%</div>
+          <h4>Sessão</h4>
+          <div class="row"><span class="label">USUÁRIO</span><span>murilo</span></div>
+          <div class="row"><span class="label">UPTIME</span><span>2d 06h 12min</span></div>
+          <div class="row"><span class="label">STATUS</span><span>Boa tarde ☼</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="section-head">
+      <h2>Sete categorias, um único menu</h2>
+      <p>As mesmas setas do dashboard levam a cada ferramenta — sem decorar comandos, sem instalar programa por programa.</p>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="num">01</div><h3>Diagnóstico de Hardware</h3><p>Saúde do disco, temperatura, bateria — nativo primeiro, com atalho para CrystalDiskInfo/HWiNFO se precisar.</p></div>
+      <div class="card"><div class="num">02</div><h3>Diagnóstico de Rede</h3><p>Dispositivos na rede, velocidade, sub-rede, IP público — identifica fabricante e MACs randomizados.</p></div>
+      <div class="card"><div class="num">03</div><h3>Manutenção do Windows</h3><p>Limpeza de temporários, verificação de integridade, reinício do Explorer.</p></div>
+      <div class="card"><div class="num">04</div><h3>Segurança</h3><p>Bloqueio de USB, status do Defender, programas na inicialização.</p></div>
+      <div class="card"><div class="num">05</div><h3>Inventário da Máquina</h3><p>Relatório completo e lista de programas instalados, exportados em segundos.</p></div>
+      <div class="card"><div class="num">06</div><h3>Ferramentas</h3><p>Hash, QR Code, UUID, backup rápido, senhas, sorteios — utilitários do dia a dia do suporte.</p></div>
+    </div>
+  </section>
+
+  <section class="install" id="instalar">
+    <div class="section-head">
+      <h2>Instalar o Orange Lily</h2>
+      <p>Escolha como preferir — os dois caminhos levam à mesma ferramenta, rodando direto na sua máquina.</p>
+    </div>
+    <div class="install-grid">
+      <div class="install-card">
+        <span class="step-tag">Via terminal</span>
+        <h3>Um comando no PowerShell</h3>
+        <p>Baixa e abre a versão mais recente, sem precisar instalar Node, git ou qualquer coisa além do Windows.</p>
+        <div class="copy-box">
+          <code id="install-cmd">irm https://raw.githubusercontent.com/3mcp/orange-lily/main/instalar.ps1 | iex</code>
+          <button type="button" id="copy-btn">Copiar</button>
+        </div>
+      </div>
+      <div class="install-card">
+        <span class="step-tag">Via download</span>
+        <h3>Baixar o executável</h3>
+        <p>Pega o orange-lily.exe direto da última versão publicada no GitHub e roda sem instalar nada.</p>
+        <a class="btn btn-primary" href="https://github.com/3mcp/orange-lily/releases/latest/download/orange-lily.exe">Baixar orange-lily.exe</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Orange Lily — painel de suporte técnico</span>
+    <span>github.com/3mcp/orange-lily</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  try{
+    var root = document.documentElement;
+    var btn = document.getElementById('theme-toggle');
+    var label = document.getElementById('theme-label');
+    var order = ['auto','light','dark'];
+    var names = {auto:'Automático', light:'Claro', dark:'Escuro'};
+    var stored = 'auto';
+    try{ stored = localStorage.getItem('ol-theme') || 'auto'; }catch(e){}
+    function apply(mode){
+      if(mode === 'auto'){ root.removeAttribute('data-theme'); }
+      else{ root.setAttribute('data-theme', mode); }
+      label.textContent = names[mode];
+    }
+    apply(stored);
+    btn.addEventListener('click', function(){
+      var idx = order.indexOf(stored);
+      stored = order[(idx+1) % order.length];
+      apply(stored);
+      try{ localStorage.setItem('ol-theme', stored); }catch(e){}
+    });
+  }catch(e){}
+})();
+
+(function(){
+  var btn = document.getElementById('copy-btn');
+  var cmd = document.getElementById('install-cmd');
+  if(!btn) return;
+  btn.addEventListener('click', function(){
+    var text = cmd.textContent;
+    function fallback(){
+      var range = document.createRange();
+      range.selectNodeContents(cmd);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        btn.textContent = 'Copiado!';
+        setTimeout(function(){ btn.textContent = 'Copiar'; }, 1600);
+      }).catch(fallback);
+    } else {
+      fallback();
+    }
+  });
+})();
+</script>
+</body>
+</html>
